@@ -4,7 +4,7 @@ import android.app.ProgressDialog;
 import android.content.Context;
 import android.os.AsyncTask;
 
-import com.test.zappos.ilovezappos.common.Utils;
+import com.test.zappos.ilovezappos.common.DownloadCallback;
 
 import java.util.Map;
 
@@ -31,8 +31,7 @@ public class BaseHttpRequestAsyncTask<T> extends AsyncTask<Void, T, T> {
 
     @Override
     protected T doInBackground(Void... params) {
-        Utils utils = new Utils(mContext);
-        if(utils.isOnline()) {
+        if(((DownloadCallback)mContext).checkNetworkConnection()) {
             HttpRequests<T> httpRequest = new HttpRequests<T>();
             return httpRequest.execute(apiMethod, parameters);
         }

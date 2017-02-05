@@ -28,7 +28,7 @@ public class HttpRequests<T> {
      * HTTP Status Codes
      */
 
-    private final int REQUEST_EXECUTED_SUCCESSFULLY = 200;
+    private int REQUEST_EXECUTED_SUCCESSFULLY = 200;
 
     private boolean isRetryRequired = true;
 
@@ -52,9 +52,9 @@ public class HttpRequests<T> {
 
         String searchTerm = "";
 
-        if(parameters != null && parameters.size() > 0 && parameters.containsKey("searchTerm")) {
+        if(parameters != null && parameters.size() > 0 && parameters.containsKey(Constants.SEARCH_KEY_TERM)) {
 
-            searchTerm = parameters.get("searchTerm");
+            searchTerm = parameters.get(Constants.SEARCH_KEY_TERM);
 
             if (!TextUtils.isEmpty(searchTerm)) {
                 Retrofit retrofit = new Retrofit.Builder()
