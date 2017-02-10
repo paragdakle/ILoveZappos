@@ -1,139 +1,120 @@
 package com.test.zappos.ilovezappos.activity;
 
-import android.content.Context;
-import android.net.ConnectivityManager;
-import android.net.NetworkInfo;
+import android.databinding.DataBindingUtil;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.support.design.widget.BaseTransientBottomBar;
-import android.support.design.widget.CoordinatorLayout;
-import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
-import android.util.Log;
-import android.view.KeyEvent;
 import android.view.View;
-import android.view.inputmethod.EditorInfo;
-import android.view.inputmethod.InputMethodManager;
-import android.widget.Button;
-import android.widget.EditText;
-import android.widget.TextView;
-import android.widget.Toast;
+import android.view.animation.AlphaAnimation;
+import android.view.animation.Animation;
+import android.view.animation.AnimationUtils;
 
 import com.test.zappos.ilovezappos.R;
 import com.test.zappos.ilovezappos.common.Constants;
-import com.test.zappos.ilovezappos.common.DownloadCallback;
-import com.test.zappos.ilovezappos.http.BaseHttpRequestAsyncTask;
-import com.test.zappos.ilovezappos.http.HttpRequests;
+import com.test.zappos.ilovezappos.common.CustomBounceInterpolator;
+import com.test.zappos.ilovezappos.databinding.ActivityProductBinding;
 import com.test.zappos.ilovezappos.http.reponse.ProductSearchResponse;
+import com.test.zappos.ilovezappos.model.Product;
 
-import java.util.HashMap;
-import java.util.Map;
+public class ProductActivity extends AppCompatActivity implements View.OnClickListener {
 
-public class ProductActivity extends AppCompatActivity implements View.OnClickListener, DownloadCallback, TextView.OnEditorActionListener {
-
-    Button btnSearch;
-    EditText searchTextEditText;
-    FloatingActionButton btnViewCart;
-    Snackbar errorSnackbar;
-    CoordinatorLayout parentLayout;
+    private boolean addedToCard = false;
+    private boolean discountedPriceShown = false;
+    ActivityProductBinding binding;
+    Snackbar snackbar;
     private ProductSearchResponse response;
-
-    private final int SEARCH_COMPLETE = 0;
-    private final int SEARCH_FAILED = 1;
+    Product product;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_product);
+        binding = DataBindingUtil.setContentView(this, R.layout.activity_product);
 
-        response = getIntent().getParcelableExtra("searchResults");
-        Log.d("Test", "Test");
-    }
+        binding.toolbar.setTitle(R.string.app_name);
+        setSupportActionBar(binding.toolbar);
+        getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+        getSupportActionBar().setDisplayShowHomeEnabled(true);
 
-    /* Function validates the tag and searches for the image tag by starting the SearchAsyncTask.
-     * @param tag The image tag to search
-     *
-     * @return void
-     */
-    private void search(String term) {
-        if(validateSearchTerm()) {
-            Map<String, String> parameters = new HashMap<>();
-            parameters.put(Constants.SEARCH_KEY_TERM, term);
-            ProductSearchAsyncTask task = new ProductSearchAsyncTask(ProductActivity.this, HttpRequests.SEARCH_PRODUCT, parameters, "Searching...");
-            task.execute((Void) null);
+        if(savedInstanceState != null && savedInstanceState.containsKey(Constants.SEARCH_RESULTS_KEY)) {
+            response = savedInstanceState.getParcelable(Constants.SEARCH_RESULTS_KEY);
         }
         else {
-            showError(getResources().getString(R.string.error_no_search_term_message));
+            response = getIntent().getParcelableExtra(Constants.SEARCH_RESULTS_KEY);
         }
+
+        product = new Product();
+        binding.mainContent.setProduct(product);
+        initializeProduct();
+
+        binding.btnAddToCart.setOnClickListener(this);
+        binding.mainContent.productDiscountedPrice.setOnClickListener(this);
     }
 
-    /* Function validates the term to be searched.
-     *
-     * @return boolean Validates the search tag and returns true if successful else false.
-     *
-     * Note: Currently only basic validation is been done and it is assumed that any special
-     * character can be part of the term being searched and thus not checked for.
-     */
-    private boolean validateSearchTerm() {
-        return searchTextEditText != null
-                && searchTextEditText.getText() != null
-                && !searchTextEditText.getText().toString().isEmpty();
-    }
-
-    /*
-     * Listener handles the Send/Go key press event for searching an image tag.
-     */
-    @Override
-    public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
-        boolean handled = false;
-        if (actionId == EditorInfo.IME_ACTION_SEND) {
-            hideSoftKeyboard();
-            search(searchTextEditText.getText().toString());
-            handled = true;
+    private void initializeProduct() {
+        if(response != null && response.results != null && response.results.size() > 0) {
+            product.populateProductFromJson(response.results.get(0).getAsJsonObject());
         }
-        return handled;
+        else {
+            showError("Failed to load product");
+        }
     }
 
     @Override
     public void onClick(View v) {
         switch (v.getId()) {
-            case R.id.btnSearch:
-                search(searchTextEditText.getText().toString());
+            case R.id.btnAddToCart:
+                if(!addedToCard) {
+                    animate(v);
+                    binding.btnAddToCart.setImageResource(R.drawable.ic_added_to_cart);
+                    showMessage("Product added to cart!");
+                    addedToCard = true;
+                }
                 break;
-            case R.id.btnViewCart:
-                break;
-        }
-    }
-
-    @Override
-    public void finishedDownloading(int operation) {
-        switch (operation)  {
-            case SEARCH_COMPLETE:
-                Toast.makeText(this, response.toString(), Toast.LENGTH_LONG).show();
-                break;
-            case SEARCH_FAILED:
-                showError(getResources().getString(R.string.error_no_products_found_message));
+            case R.id.productDiscountedPrice:
+                if(!discountedPriceShown) {
+                    showDiscountedPrice();
+                    discountedPriceShown = true;
+                }
                 break;
         }
     }
 
-    @Override
-    public boolean checkNetworkConnection() {
-        ConnectivityManager cm =
-                (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
-        NetworkInfo netInfo = cm.getActiveNetworkInfo();
-        return netInfo != null && netInfo.isConnected();
+    private void animate(View view) {
+        final Animation myAnim = AnimationUtils.loadAnimation(ProductActivity.this, R.anim.fab_bounce_anim);
+        CustomBounceInterpolator interpolator = new CustomBounceInterpolator(0.2, 20);
+        myAnim.setInterpolator(interpolator);
+        view.startAnimation(myAnim);
     }
 
-    /* Function hides the soft keyboard.
-     *
-     * @return void
-     */
-    public void hideSoftKeyboard() {
-        if(getCurrentFocus()!=null) {
-            InputMethodManager inputMethodManager = (InputMethodManager) getSystemService(INPUT_METHOD_SERVICE);
-            inputMethodManager.hideSoftInputFromWindow(getCurrentFocus().getWindowToken(), 0);
-        }
+    private void showDiscountedPrice() {
+        final Animation out = new AlphaAnimation(1.0f, 0.1f);
+        out.setDuration(300);
+
+        out.setAnimationListener(new Animation.AnimationListener() {
+            @Override
+            public void onAnimationStart(Animation animation) {
+
+            }
+
+            @Override
+            public void onAnimationEnd(Animation animation) {
+                if(product.getPercentOff().equalsIgnoreCase("0%")) {
+                    binding.mainContent.productDiscountedPrice.setText(getResources().getString(R.string.no_discount_price_string));
+                }
+                else {
+                    binding.mainContent.productDiscountedPrice.setText(String.format(getString(R.string.discount_price_string), product.getPrice(), product.getPercentOff()));
+                }
+            }
+
+            @Override
+            public void onAnimationRepeat(Animation animation) {
+
+            }
+        });
+        binding.mainContent.productDiscountedPrice.startAnimation(out);
     }
 
     /* Function displays an error message in a Snackbar.
@@ -143,30 +124,26 @@ public class ProductActivity extends AppCompatActivity implements View.OnClickLi
      */
     private void showError(String errorMessage) {
         if(errorMessage != null && !errorMessage.isEmpty()) {
-            errorSnackbar = Snackbar.make(parentLayout, errorMessage, BaseTransientBottomBar.LENGTH_LONG);
-            errorSnackbar.show();
+            snackbar = Snackbar.make(binding.parentCoordinatorLayout, errorMessage, BaseTransientBottomBar.LENGTH_LONG).setActionTextColor(Color.RED);
+            snackbar.show();
         }
     }
 
-    private class ProductSearchAsyncTask extends BaseHttpRequestAsyncTask<ProductSearchResponse> {
-
-        DownloadCallback mCallback;
-
-        public ProductSearchAsyncTask(Context context, int apiMethod, Map<String, String> parameters, String displayMessage) {
-            super(context, apiMethod, parameters, displayMessage);
-            this.mCallback = (DownloadCallback) context;
+    /* Function displays an error message in a Snackbar.
+     * @param errorMessage The error message to display
+     *
+     * @return void
+     */
+    private void showMessage(String message) {
+        if(message != null && !message.isEmpty()) {
+            snackbar = Snackbar.make(binding.parentCoordinatorLayout, message, BaseTransientBottomBar.LENGTH_LONG);
+            snackbar.show();
         }
+    }
 
-        @Override
-        protected void onPostExecute(ProductSearchResponse searchResponse) {
-            super.onPostExecute(searchResponse);
-            if(searchResponse != null) {
-                response = searchResponse;
-                mCallback.finishedDownloading(SEARCH_COMPLETE);
-            }
-            else {
-                mCallback.finishedDownloading(SEARCH_FAILED);
-            }
-        }
+    @Override
+    public void onSaveInstanceState(Bundle outState) {
+        outState.putParcelable(Constants.SEARCH_RESULTS_KEY, response);
+        super.onSaveInstanceState(outState);
     }
 }

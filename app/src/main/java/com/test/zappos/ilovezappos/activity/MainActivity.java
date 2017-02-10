@@ -2,14 +2,15 @@ package com.test.zappos.ilovezappos.activity;
 
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.Color;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.Bundle;
 import android.support.design.widget.BaseTransientBottomBar;
 import android.support.design.widget.CoordinatorLayout;
-import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.Toolbar;
 import android.view.KeyEvent;
 import android.view.View;
 import android.view.inputmethod.EditorInfo;
@@ -32,7 +33,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     Button btnSearch;
     EditText searchTextEditText;
-    FloatingActionButton btnViewCart;
     Snackbar errorSnackbar;
     CoordinatorLayout parentLayout;
     private ProductSearchResponse response;
@@ -44,17 +44,21 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
+        setSupportActionBar(toolbar);
 
         btnSearch = (Button) findViewById(R.id.btnSearch);
         searchTextEditText = (EditText) findViewById(R.id.searchKeywordEditText);
-        btnViewCart = (FloatingActionButton) findViewById(R.id.btnViewCart);
         parentLayout = (CoordinatorLayout) findViewById(R.id.parentCoordinatorLayout);
 
         btnSearch.setOnClickListener(this);
-        btnViewCart.setOnClickListener(this);
         searchTextEditText.setOnEditorActionListener(this);
 
         response = new ProductSearchResponse();
+
+        if(savedInstanceState != null && savedInstanceState.containsKey(Constants.SEARCH_KEY_TERM)) {
+            searchTextEditText.setText(savedInstanceState.getString(Constants.SEARCH_KEY_TERM, ""));
+        }
     }
 
     /* Function validates the tag and searches for the image tag by starting the SearchAsyncTask.
@@ -107,8 +111,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             case R.id.btnSearch:
                 search(searchTextEditText.getText().toString());
                 break;
-            case R.id.btnViewCart:
-                break;
         }
     }
 
@@ -117,7 +119,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         switch (operation)  {
             case SEARCH_COMPLETE:
                 Intent intent = new Intent(MainActivity.this, ProductActivity.class);
-                intent.putExtra("searchResults", response);
+                intent.putExtra(Constants.SEARCH_RESULTS_KEY, response);
                 startActivity(intent);
                 break;
             case SEARCH_FAILED:
@@ -152,7 +154,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
      */
     private void showError(String errorMessage) {
         if(errorMessage != null && !errorMessage.isEmpty()) {
-            errorSnackbar = Snackbar.make(parentLayout, errorMessage, BaseTransientBottomBar.LENGTH_LONG);
+            errorSnackbar = Snackbar.make(parentLayout, errorMessage, BaseTransientBottomBar.LENGTH_LONG).setActionTextColor(Color.RED);
             errorSnackbar.show();
         }
     }
@@ -177,5 +179,11 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 mCallback.finishedDownloading(SEARCH_FAILED);
             }
         }
+    }
+
+    @Override
+    public void onSaveInstanceState(Bundle outState) {
+        outState.putString(Constants.SEARCH_KEY_TERM, searchTextEditText.getText().toString());
+        super.onSaveInstanceState(outState);
     }
 }

@@ -1,8 +1,11 @@
 <resources>
-    <string name="app_name">ILoveZappos</string>
+    <string name="app_name">I Love Zappos</string>
     <string name="search_keyword_edittext_hint">What are you looking for?</string>
     <string name="search_button_text">Search</string>
     <string name="error_no_internet_connection_message">Kindly check your network connection and retry!</string>
     <string name="error_no_products_found_message">No products found!</string>
     <string name="error_no_search_term_message">Kindly provide a product or brand to search!</string>
+    <string name="discount_price_placeholder">Tap to see best price</string>
+    <string name="discount_price_string">%1$s (%2$s discount)</string>
+    <string name="no_discount_price_string">Product already at best price.</string>
 </resources>

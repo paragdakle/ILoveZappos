@@ -1,7 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="colorPrimary">#825AA0</color>
-    <color name="colorPrimaryDark">#694584</color>
-    <color name="colorAccent">#825aa0</color>
-    <color name="accentGreen">#40CB80</color>
+    <color name="colorPrimary">#4ABDAC</color>
+    <color name="colorPrimaryDark">#4ABDAC</color>
+    <color name="colorAccent">#F7B733</color>
+    <color name="colorAccent1">#FC4A1A</color>
+    <color name="colorAccent2">#DFDCE3</color>
+    <color name="colorAccent3">#322D39</color>
+    <color name="actionBarTextColor">#FFFDF9</color>
 </resources>
