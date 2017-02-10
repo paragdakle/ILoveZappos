@@ -1,14 +1,20 @@
 package com.test.zappos.ilovezappos.activity;
 
+import android.Manifest;
+import android.content.ActivityNotFoundException;
 import android.content.Context;
 import android.content.Intent;
-import android.graphics.Color;
+import android.content.pm.PackageManager;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.Bundle;
+import android.speech.RecognizerIntent;
 import android.support.design.widget.BaseTransientBottomBar;
 import android.support.design.widget.CoordinatorLayout;
+import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
+import android.support.v4.app.ActivityCompat;
+import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.view.KeyEvent;
@@ -26,19 +32,24 @@ import com.test.zappos.ilovezappos.http.BaseHttpRequestAsyncTask;
 import com.test.zappos.ilovezappos.http.HttpRequests;
 import com.test.zappos.ilovezappos.http.reponse.ProductSearchResponse;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 
 public class MainActivity extends AppCompatActivity implements View.OnClickListener, DownloadCallback, TextView.OnEditorActionListener {
 
-    Button btnSearch;
+    Button btnSearch, btnCrazySearch;
     EditText searchTextEditText;
     Snackbar errorSnackbar;
     CoordinatorLayout parentLayout;
+    FloatingActionButton btnTalk;
     private ProductSearchResponse response;
 
     private final int SEARCH_COMPLETE = 0;
     private final int SEARCH_FAILED = 1;
+
+    public static final int VOICE_RECOGNITION_REQUEST_CODE = 1234;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -48,10 +59,14 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         setSupportActionBar(toolbar);
 
         btnSearch = (Button) findViewById(R.id.btnSearch);
+        btnCrazySearch = (Button) findViewById(R.id.btnCrazySearch);
+        btnTalk = (FloatingActionButton) findViewById(R.id.startVoiceSearch);
         searchTextEditText = (EditText) findViewById(R.id.searchKeywordEditText);
         parentLayout = (CoordinatorLayout) findViewById(R.id.parentCoordinatorLayout);
 
         btnSearch.setOnClickListener(this);
+        btnCrazySearch.setOnClickListener(this);
+        btnTalk.setOnClickListener(this);
         searchTextEditText.setOnEditorActionListener(this);
 
         response = new ProductSearchResponse();
@@ -67,14 +82,80 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
      * @return void
      */
     private void search(String term) {
-        if(validateSearchTerm()) {
+        if(validateSearchTerm(term)) {
             Map<String, String> parameters = new HashMap<>();
             parameters.put(Constants.SEARCH_KEY_TERM, term);
-            ProductSearchAsyncTask task = new ProductSearchAsyncTask(MainActivity.this, HttpRequests.SEARCH_PRODUCT, parameters, "Searching...");
+            ProductSearchAsyncTask task = new ProductSearchAsyncTask(MainActivity.this, HttpRequests.SEARCH_PRODUCT, parameters, String.format(getString(R.string.searching_display_string), term));
             task.execute((Void) null);
         }
         else {
             showError(getResources().getString(R.string.error_no_search_term_message));
+        }
+    }
+
+    public void startVoiceRecognitionActivity() {
+        int permissionCheck = ContextCompat.checkSelfPermission(MainActivity.this,
+                Manifest.permission.RECORD_AUDIO);
+        if(permissionCheck == PackageManager.PERMISSION_GRANTED) {
+            Intent intent = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
+            intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL,
+                    RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
+            intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault());
+            intent.putExtra(RecognizerIntent.EXTRA_PROMPT,
+                    "Say - Show me ...");
+            try {
+                startActivityForResult(intent, VOICE_RECOGNITION_REQUEST_CODE);
+            }
+            catch (ActivityNotFoundException e) {
+                showError(getString(R.string.speech_not_supported));
+            }
+        }
+        else {
+            ActivityCompat.requestPermissions(this,
+                    new String[]{Manifest.permission.RECORD_AUDIO},
+                    VOICE_RECOGNITION_REQUEST_CODE);
+        }
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode,
+                                           String permissions[], int[] grantResults) {
+        switch (requestCode) {
+            case VOICE_RECOGNITION_REQUEST_CODE: {
+                // If request is cancelled, the result arrays are empty.
+                if (grantResults.length > 0
+                        && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    startVoiceRecognitionActivity();
+
+                } else {
+                    showError(getString(R.string.permission_denied));
+                }
+            }
+        }
+    }
+
+    @Override
+    public void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+
+        if (requestCode == VOICE_RECOGNITION_REQUEST_CODE && resultCode == RESULT_OK) {
+            // Fill the list view with the strings the recognizer thought it
+            // could have heard
+            ArrayList matches = data.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS);
+
+            if(matches.size() > 0) {
+                String bestMatch = matches.get(0).toString();
+                if (bestMatch.toLowerCase().contains(Constants.VOICE_SEARCH_PREFIX.toLowerCase()) && bestMatch.length() > Constants.VOICE_SEARCH_PREFIX.length()) {
+                    String term = bestMatch.substring(Constants.VOICE_SEARCH_PREFIX.length(), bestMatch.length());
+                    search(term);
+                }
+                else {
+                    showError(getString(R.string.voice_search_wrong_command));
+                }
+            }
+            else {
+                showError(getString(R.string.voice_search_failed));
+            }
         }
     }
 
@@ -85,10 +166,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
      * Note: Currently only basic validation is been done and it is assumed that any special
      * character can be part of the term being searched and thus not checked for.
      */
-    private boolean validateSearchTerm() {
-        return searchTextEditText != null
-                && searchTextEditText.getText() != null
-                && !searchTextEditText.getText().toString().isEmpty();
+    private boolean validateSearchTerm(String searchTerm) {
+        return !searchTerm.isEmpty();
     }
 
     /*
@@ -110,6 +189,12 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         switch (v.getId()) {
             case R.id.btnSearch:
                 search(searchTextEditText.getText().toString());
+                break;
+            case R.id.btnCrazySearch:
+                search(Constants.CRAZY_SEARCH_TERM);
+                break;
+            case R.id.startVoiceSearch:
+                startVoiceRecognitionActivity();
                 break;
         }
     }
@@ -154,7 +239,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
      */
     private void showError(String errorMessage) {
         if(errorMessage != null && !errorMessage.isEmpty()) {
-            errorSnackbar = Snackbar.make(parentLayout, errorMessage, BaseTransientBottomBar.LENGTH_LONG).setActionTextColor(Color.RED);
+            errorSnackbar = Snackbar.make(parentLayout, errorMessage, BaseTransientBottomBar.LENGTH_LONG);
             errorSnackbar.show();
         }
     }

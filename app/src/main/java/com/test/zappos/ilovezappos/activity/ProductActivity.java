@@ -1,7 +1,6 @@
 package com.test.zappos.ilovezappos.activity;
 
 import android.databinding.DataBindingUtil;
-import android.graphics.Color;
 import android.os.Bundle;
 import android.support.design.widget.BaseTransientBottomBar;
 import android.support.design.widget.Snackbar;
@@ -58,7 +57,7 @@ public class ProductActivity extends AppCompatActivity implements View.OnClickLi
             product.populateProductFromJson(response.results.get(0).getAsJsonObject());
         }
         else {
-            showError("Failed to load product");
+            showMessage(getString(R.string.product_load_failed_error_message));
         }
     }
 
@@ -69,7 +68,7 @@ public class ProductActivity extends AppCompatActivity implements View.OnClickLi
                 if(!addedToCard) {
                     animate(v);
                     binding.btnAddToCart.setImageResource(R.drawable.ic_added_to_cart);
-                    showMessage("Product added to cart!");
+                    showMessage(getString(R.string.product_added_to_cart_message));
                     addedToCard = true;
                 }
                 break;
@@ -115,18 +114,6 @@ public class ProductActivity extends AppCompatActivity implements View.OnClickLi
             }
         });
         binding.mainContent.productDiscountedPrice.startAnimation(out);
-    }
-
-    /* Function displays an error message in a Snackbar.
-     * @param errorMessage The error message to display
-     *
-     * @return void
-     */
-    private void showError(String errorMessage) {
-        if(errorMessage != null && !errorMessage.isEmpty()) {
-            snackbar = Snackbar.make(binding.parentCoordinatorLayout, errorMessage, BaseTransientBottomBar.LENGTH_LONG).setActionTextColor(Color.RED);
-            snackbar.show();
-        }
     }
 
     /* Function displays an error message in a Snackbar.

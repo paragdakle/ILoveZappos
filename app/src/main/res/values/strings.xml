@@ -8,4 +8,12 @@
     <string name="discount_price_placeholder">Tap to see best price</string>
     <string name="discount_price_string">%1$s (%2$s discount)</string>
     <string name="no_discount_price_string">Product already at best price.</string>
+    <string name="crazy_search_button_text">Surprise Me!</string>
+    <string name="speech_not_supported">Sorry! Your device doesn\'t support speech input</string>
+    <string name="permission_denied">Cannot do voice search! Permission denied!</string>
+    <string name="voice_search_failed">Sorry didn\'t get that! Can you try once more?</string>
+    <string name="voice_search_wrong_command">Invalid voice command! Use show me _____.</string>
+    <string name="searching_display_string">Searching %1$s....</string>
+    <string name="product_added_to_cart_message">Product added to cart!</string>
+    <string name="product_load_failed_error_message">Failed to load product!</string>
 </resources>

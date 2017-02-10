@@ -105,7 +105,8 @@ public class Product {
     public static void loadImage(ImageView view, String imageUrl) {
         Picasso.with(view.getContext())
                 .load(imageUrl)
-                .placeholder(R.drawable.no_product)
+                .placeholder(R.drawable.loading)
+                .error(R.drawable.no_product)
                 .resize(200, 200)
                 .into(view);
     }

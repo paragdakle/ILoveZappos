@@ -6,7 +6,8 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:id="@+id/parentCoordinatorLayout"
-    tools:context="com.test.zappos.ilovezappos.activity.MainActivity">
+    tools:context="com.test.zappos.ilovezappos.activity.MainActivity"
+    android:background="@drawable/search_activity_background">
 
     <android.support.design.widget.AppBarLayout
         android:layout_width="match_parent"
@@ -32,24 +33,58 @@
         app:layout_behavior="@string/appbar_scrolling_view_behavior"
         android:padding="16dp">
 
-        <Button
-            android:layout_width="wrap_content"
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="10dp"
+            android:id="@+id/centerView"
+            android:layout_centerInParent="true"/>
+
+        <LinearLayout
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:id="@+id/btnSearch"
-            style="@style/Widget.AppCompat.Button.Colored"
-            android:layout_centerInParent="true"
-            android:text="@string/search_button_text"/>
+            android:id="@+id/searchBtnsLayout"
+            android:layout_above="@+id/centerView"
+            android:orientation="horizontal"
+            android:gravity="center">
+
+            <Button
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:id="@+id/btnCrazySearch"
+                android:layout_margin="5dp"
+                style="@style/Widget.AppCompat.Button.Colored"
+                android:text="@string/crazy_search_button_text"/>
+
+            <Button
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:id="@+id/btnSearch"
+                style="@style/Widget.AppCompat.Button.Colored"
+                android:text="@string/search_button_text"
+                android:layout_margin="5dp"/>
+
+        </LinearLayout>
 
         <EditText
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:id="@+id/searchKeywordEditText"
-            android:layout_above="@+id/btnSearch"
+            android:layout_above="@+id/searchBtnsLayout"
             android:hint="@string/search_keyword_edittext_hint"
             android:inputType="text"
             android:imeOptions="actionSend"
             android:maxLines="1"/>
 
     </RelativeLayout>
+
+    <android.support.design.widget.FloatingActionButton
+        android:src="@drawable/voice_recording"
+        app:backgroundTint="@color/colorPrimary"
+        app:fabSize="normal"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/startVoiceSearch"
+        android:layout_gravity="bottom|center"
+        android:layout_marginBottom="120dp"/>
 
 </android.support.design.widget.CoordinatorLayout>
