@@ -47,6 +47,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     Button btnSearch, btnCrazySearch;
     AVLoadingIndicatorView indicatorView;
     EditText searchTextEditText;
+    TextView txtVoiceSearchInfo;
     Snackbar errorSnackbar;
     CoordinatorLayout parentLayout;
     FloatingActionButton btnTalk;
@@ -74,6 +75,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         searchTextEditText = (EditText) findViewById(R.id.searchKeywordEditText);
         parentLayout = (CoordinatorLayout) findViewById(R.id.parentCoordinatorLayout);
         indicatorView = (AVLoadingIndicatorView) findViewById(R.id.voiceInputIndicator);
+        txtVoiceSearchInfo = (TextView) findViewById(R.id.voiceSearchInfo);
 
         //Attach the listeners
         btnSearch.setOnClickListener(this);
@@ -153,6 +155,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         int permissionCheck = ContextCompat.checkSelfPermission(MainActivity.this,
                 Manifest.permission.RECORD_AUDIO);
         if(permissionCheck == PackageManager.PERMISSION_GRANTED) {
+            txtVoiceSearchInfo.setText(getString(R.string.voice_search_commant_message));
             speech.startListening(recognizerIntent);
         }
         else {

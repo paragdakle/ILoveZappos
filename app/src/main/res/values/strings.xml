@@ -17,4 +17,5 @@
     <string name="product_added_to_cart_message">Product added to cart!</string>
     <string name="product_load_failed_error_message">Failed to load product!</string>
     <string name="voice_search_invitation_message">Bored typing? Talk :)</string>
+    <string name="voice_search_commant_message">Say show me ..</string>
 </resources>

@@ -84,7 +84,7 @@
             app:indicatorColor="@color/colorAccent1"
             app:indicatorName="BallPulseIndicator"
             style="@style/AVLoadingIndicatorView.Small"
-            android:visibility="visible"
+            android:visibility="gone"
             android:layout_centerHorizontal="true"/>
 
     </RelativeLayout>
@@ -106,6 +106,7 @@
         android:text="@string/voice_search_invitation_message"
         android:textAppearance="?android:textAppearanceLarge"
         android:layout_marginBottom="70dp"
-        android:fontFamily="sans-serif-light"/>
+        android:fontFamily="sans-serif-light"
+        android:id="@+id/voiceSearchInfo"/>
 
 </android.support.design.widget.CoordinatorLayout>
