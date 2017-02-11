@@ -17,6 +17,10 @@ import com.test.zappos.ilovezappos.databinding.ActivityProductBinding;
 import com.test.zappos.ilovezappos.http.reponse.ProductSearchResponse;
 import com.test.zappos.ilovezappos.model.Product;
 
+/**
+ * Created by Parag Dakle.
+ */
+
 public class ProductActivity extends AppCompatActivity implements View.OnClickListener {
 
     private boolean addedToCard = false;
@@ -52,6 +56,9 @@ public class ProductActivity extends AppCompatActivity implements View.OnClickLi
         binding.mainContent.productDiscountedPrice.setOnClickListener(this);
     }
 
+    /*
+     * Loads the product from search response object in the product object.
+     */
     private void initializeProduct() {
         if(response != null && response.results != null && response.results.size() > 0) {
             product.populateProductFromJson(response.results.get(0).getAsJsonObject());
@@ -81,6 +88,9 @@ public class ProductActivity extends AppCompatActivity implements View.OnClickLi
         }
     }
 
+    /*
+     * Method shows the bounce animation for the addToCart FAB.
+     */
     private void animate(View view) {
         final Animation myAnim = AnimationUtils.loadAnimation(ProductActivity.this, R.anim.fab_bounce_anim);
         CustomBounceInterpolator interpolator = new CustomBounceInterpolator(0.2, 20);
@@ -88,6 +98,9 @@ public class ProductActivity extends AppCompatActivity implements View.OnClickLi
         view.startAnimation(myAnim);
     }
 
+    /*
+     * Method shows the discounted price on user tap. Uses simple animation to reveal the cost.
+     */
     private void showDiscountedPrice() {
         final Animation out = new AlphaAnimation(1.0f, 0.1f);
         out.setDuration(300);
@@ -116,8 +129,8 @@ public class ProductActivity extends AppCompatActivity implements View.OnClickLi
         binding.mainContent.productDiscountedPrice.startAnimation(out);
     }
 
-    /* Function displays an error message in a Snackbar.
-     * @param errorMessage The error message to display
+    /* Function displays a message in a Snackbar.
+     * @param message The message to display
      *
      * @return void
      */
@@ -128,6 +141,9 @@ public class ProductActivity extends AppCompatActivity implements View.OnClickLi
         }
     }
 
+    /*
+     * Method to save the necessary data in the save
+     */
     @Override
     public void onSaveInstanceState(Bundle outState) {
         outState.putParcelable(Constants.SEARCH_RESULTS_KEY, response);

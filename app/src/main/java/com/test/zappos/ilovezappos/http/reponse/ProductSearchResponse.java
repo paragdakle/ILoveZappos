@@ -9,30 +9,53 @@ import com.google.gson.JsonParser;
 import com.google.gson.annotations.SerializedName;
 
 /**
- * Created by root on 6/3/16.
+ * Created by Parag Dakle on 6/3/16.
+ *
+ * Class is the Model class for Product Search Results response.
  */
 public class ProductSearchResponse implements Parcelable {
 
+    /*
+     * Class default constructor.
+     *
+     * Initialize the search result entities.
+     */
+    public ProductSearchResponse() {
+        statusCode = "";
+        searchTerm = "";
+        currentResultCount = "";
+        totalResultCount = "";
+        term = "";
+        results = new JsonArray();
+    }
+
+    //Search result response status code.
     @SerializedName("statusCode")
     public String statusCode;
 
+    //Original search term
     @SerializedName("originalTerm")
     public String searchTerm;
 
+    //Count of items returned in the search response.
     @SerializedName("currentResultCount")
     public String currentResultCount;
 
+    //Total number of result items for the search term.
     @SerializedName("totalResultCount")
     public String totalResultCount;
 
+    //Secondary search term used, if any.
     @SerializedName("term")
     public String term;
 
+    //Search results.
     @SerializedName("results")
     public JsonArray results;
 
-    public ProductSearchResponse() {}
-
+    /*
+     * Parceleable parameterized constructor.
+     */
     protected ProductSearchResponse(Parcel in) {
         statusCode = in.readString();
         searchTerm = in.readString();
@@ -69,21 +92,5 @@ public class ProductSearchResponse implements Parcelable {
         dest.writeString(term);
         dest.writeString(results.toString());
     }
-
-    /*@Override
-    public String toString() {
-        StringBuilder builder = new StringBuilder();
-        builder.append("Search Term: ")
-                .append(searchTerm)
-                .append(", Current Result Count: ")
-                .append(currentResultCount)
-                .append(", Total Result Count: ")
-                .append(totalResultCount)
-                .append(", Term: ")
-                .append(term)
-                .append(", Results: ")
-                .append(results.toString());
-        return builder.toString();
-    }*/
 
 }

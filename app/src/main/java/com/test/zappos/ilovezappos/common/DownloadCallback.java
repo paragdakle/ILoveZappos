@@ -1,7 +1,9 @@
 package com.test.zappos.ilovezappos.common;
 
 /**
- * Created by root on 4/2/17.
+ * Created by Parag Dakle on 4/2/17.
+ *
+ * The interface consists of methods for background Network Operations.
  */
 
 public interface DownloadCallback {

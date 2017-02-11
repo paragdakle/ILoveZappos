@@ -1,14 +1,15 @@
 package com.test.zappos.ilovezappos.activity;
 
 import android.Manifest;
-import android.content.ActivityNotFoundException;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.Bundle;
+import android.speech.RecognitionListener;
 import android.speech.RecognizerIntent;
+import android.speech.SpeechRecognizer;
 import android.support.design.widget.BaseTransientBottomBar;
 import android.support.design.widget.CoordinatorLayout;
 import android.support.design.widget.FloatingActionButton;
@@ -31,20 +32,28 @@ import com.test.zappos.ilovezappos.common.DownloadCallback;
 import com.test.zappos.ilovezappos.http.BaseHttpRequestAsyncTask;
 import com.test.zappos.ilovezappos.http.HttpRequests;
 import com.test.zappos.ilovezappos.http.reponse.ProductSearchResponse;
+import com.wang.avi.AVLoadingIndicatorView;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Locale;
 import java.util.Map;
 
-public class MainActivity extends AppCompatActivity implements View.OnClickListener, DownloadCallback, TextView.OnEditorActionListener {
+/**
+ * Created by Parag Dakle.
+ */
+
+public class MainActivity extends AppCompatActivity implements View.OnClickListener, DownloadCallback, TextView.OnEditorActionListener, RecognitionListener {
 
     Button btnSearch, btnCrazySearch;
+    AVLoadingIndicatorView indicatorView;
     EditText searchTextEditText;
     Snackbar errorSnackbar;
     CoordinatorLayout parentLayout;
     FloatingActionButton btnTalk;
     private ProductSearchResponse response;
+
+    private SpeechRecognizer speech = null;
+    private Intent recognizerIntent;
 
     private final int SEARCH_COMPLETE = 0;
     private final int SEARCH_FAILED = 1;
@@ -58,26 +67,52 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
+        //Initialize UI component variables
         btnSearch = (Button) findViewById(R.id.btnSearch);
         btnCrazySearch = (Button) findViewById(R.id.btnCrazySearch);
         btnTalk = (FloatingActionButton) findViewById(R.id.startVoiceSearch);
         searchTextEditText = (EditText) findViewById(R.id.searchKeywordEditText);
         parentLayout = (CoordinatorLayout) findViewById(R.id.parentCoordinatorLayout);
+        indicatorView = (AVLoadingIndicatorView) findViewById(R.id.voiceInputIndicator);
 
+        //Attach the listeners
         btnSearch.setOnClickListener(this);
         btnCrazySearch.setOnClickListener(this);
         btnTalk.setOnClickListener(this);
         searchTextEditText.setOnEditorActionListener(this);
 
+        //Initialize remaining variables
         response = new ProductSearchResponse();
 
+        //If savedInstanceState available retrieve search text from it.
         if(savedInstanceState != null && savedInstanceState.containsKey(Constants.SEARCH_KEY_TERM)) {
             searchTextEditText.setText(savedInstanceState.getString(Constants.SEARCH_KEY_TERM, ""));
         }
+
+        speech = SpeechRecognizer.createSpeechRecognizer(this);
+        speech.setRecognitionListener(this);
+        initializeRecognizerIntent();
     }
 
-    /* Function validates the tag and searches for the image tag by starting the SearchAsyncTask.
-     * @param tag The image tag to search
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        if (speech != null) {
+            speech.destroy();
+        }
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        if (speech != null) {
+            speech.stopListening();
+            indicatorView.hide();
+        }
+    }
+
+    /* Function validates the search term and searches by starting the ProductSearchAsyncTask.
+     * @param term The term to search
      *
      * @return void
      */
@@ -93,22 +128,32 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         }
     }
 
-    public void startVoiceRecognitionActivity() {
+    /*
+     * Method initializes the recognizerIntent with necessary parameters.
+     */
+    private void initializeRecognizerIntent() {
+        recognizerIntent = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
+        recognizerIntent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_PREFERENCE,
+                "en");
+        recognizerIntent.putExtra(RecognizerIntent.EXTRA_CALLING_PACKAGE,
+                this.getPackageName());
+        recognizerIntent.putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true);
+        recognizerIntent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL,
+                RecognizerIntent.LANGUAGE_MODEL_WEB_SEARCH);
+        recognizerIntent.putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 1);
+    }
+
+    /*
+     * Method starts the speech recognition process.
+     * However, before starting, a check to ensure that RECORD_AUDIO permissions have been granted
+     * to the app is performed. In case the app does not have the required permission corresponding
+     * dialog to request permission is created.
+     */
+    private void startVoiceRecognitionActivity() {
         int permissionCheck = ContextCompat.checkSelfPermission(MainActivity.this,
                 Manifest.permission.RECORD_AUDIO);
         if(permissionCheck == PackageManager.PERMISSION_GRANTED) {
-            Intent intent = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
-            intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL,
-                    RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
-            intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault());
-            intent.putExtra(RecognizerIntent.EXTRA_PROMPT,
-                    "Say - Show me ...");
-            try {
-                startActivityForResult(intent, VOICE_RECOGNITION_REQUEST_CODE);
-            }
-            catch (ActivityNotFoundException e) {
-                showError(getString(R.string.speech_not_supported));
-            }
+            speech.startListening(recognizerIntent);
         }
         else {
             ActivityCompat.requestPermissions(this,
@@ -134,34 +179,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         }
     }
 
-    @Override
-    public void onActivityResult(int requestCode, int resultCode, Intent data) {
-        super.onActivityResult(requestCode, resultCode, data);
-
-        if (requestCode == VOICE_RECOGNITION_REQUEST_CODE && resultCode == RESULT_OK) {
-            // Fill the list view with the strings the recognizer thought it
-            // could have heard
-            ArrayList matches = data.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS);
-
-            if(matches.size() > 0) {
-                String bestMatch = matches.get(0).toString();
-                if (bestMatch.toLowerCase().contains(Constants.VOICE_SEARCH_PREFIX.toLowerCase()) && bestMatch.length() > Constants.VOICE_SEARCH_PREFIX.length()) {
-                    String term = bestMatch.substring(Constants.VOICE_SEARCH_PREFIX.length(), bestMatch.length());
-                    search(term);
-                }
-                else {
-                    showError(getString(R.string.voice_search_wrong_command));
-                }
-            }
-            else {
-                showError(getString(R.string.voice_search_failed));
-            }
-        }
-    }
-
     /* Function validates the term to be searched.
      *
-     * @return boolean Validates the search tag and returns true if successful else false.
+     * @return boolean Validates the search term and returns true if successful else false.
      *
      * Note: Currently only basic validation is been done and it is assumed that any special
      * character can be part of the term being searched and thus not checked for.
@@ -171,7 +191,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     }
 
     /*
-     * Listener handles the Send/Go key press event for searching an image tag.
+     * Listener handles the Send/Go key press event for searching a product.
      */
     @Override
     public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
@@ -199,6 +219,10 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         }
     }
 
+    /*
+     * Implementation of the DownloadCallback Interface method.
+     * Carries out post asynctask completion activities.
+     */
     @Override
     public void finishedDownloading(int operation) {
         switch (operation)  {
@@ -209,6 +233,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 break;
             case SEARCH_FAILED:
                 showError(getResources().getString(R.string.error_no_products_found_message));
+                searchTextEditText.setText("");
                 break;
         }
     }
@@ -225,7 +250,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
      *
      * @return void
      */
-    public void hideSoftKeyboard() {
+    private void hideSoftKeyboard() {
         if(getCurrentFocus()!=null) {
             InputMethodManager inputMethodManager = (InputMethodManager) getSystemService(INPUT_METHOD_SERVICE);
             inputMethodManager.hideSoftInputFromWindow(getCurrentFocus().getWindowToken(), 0);
@@ -233,6 +258,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     }
 
     /* Function displays an error message in a Snackbar.
+     *
      * @param errorMessage The error message to display
      *
      * @return void
@@ -244,11 +270,81 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         }
     }
 
+    //Mandatory handler implementations for the RecognitionListener interface.
+
+    @Override
+    public void onReadyForSpeech(Bundle params) {
+        indicatorView.show();
+    }
+
+    @Override
+    public void onBeginningOfSpeech() {
+
+    }
+
+    @Override
+    public void onRmsChanged(float rmsdB) {
+
+    }
+
+    @Override
+    public void onBufferReceived(byte[] buffer) {
+
+    }
+
+    @Override
+    public void onEndOfSpeech() {
+        speech.stopListening();
+        indicatorView.hide();
+    }
+
+    @Override
+    public void onError(int error) {
+
+    }
+
+    @Override
+    public void onResults(Bundle results) {
+        ArrayList matches = results.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION);
+
+        if(matches != null && matches.size() > 0) {
+            String bestMatch = matches.get(0).toString();
+            if (bestMatch.toLowerCase().contains(Constants.VOICE_SEARCH_PREFIX.toLowerCase()) && bestMatch.length() > Constants.VOICE_SEARCH_PREFIX.length()) {
+                String term = bestMatch.substring(Constants.VOICE_SEARCH_PREFIX.length(), bestMatch.length());
+                search(term);
+            }
+            else {
+                showError(getString(R.string.voice_search_wrong_command));
+            }
+        }
+        else {
+            showError(getString(R.string.voice_search_failed));
+        }
+    }
+
+    @Override
+    public void onPartialResults(Bundle partialResults) {
+        ArrayList matches = partialResults.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION);
+
+        if(matches != null && matches.size() > 0) {
+            searchTextEditText.setText(matches.get(0).toString());
+        }
+        else {
+            showError(getString(R.string.voice_search_failed));
+        }
+    }
+
+    @Override
+    public void onEvent(int eventType, Bundle params) {
+
+    }
+
+    //AsyncTask to perform product search operation.
     private class ProductSearchAsyncTask extends BaseHttpRequestAsyncTask<ProductSearchResponse> {
 
         DownloadCallback mCallback;
 
-        public ProductSearchAsyncTask(Context context, int apiMethod, Map<String, String> parameters, String displayMessage) {
+        private ProductSearchAsyncTask(Context context, int apiMethod, Map<String, String> parameters, String displayMessage) {
             super(context, apiMethod, parameters, displayMessage);
             this.mCallback = (DownloadCallback) context;
         }
@@ -256,7 +352,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         @Override
         protected void onPostExecute(ProductSearchResponse searchResponse) {
             super.onPostExecute(searchResponse);
-            if(searchResponse != null) {
+            if(searchResponse != null && searchResponse.results.size() > 0) {
                 response = searchResponse;
                 mCallback.finishedDownloading(SEARCH_COMPLETE);
             }
@@ -266,6 +362,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         }
     }
 
+    /*
+     * Method to save the necessary data in the save
+     */
     @Override
     public void onSaveInstanceState(Bundle outState) {
         outState.putString(Constants.SEARCH_KEY_TERM, searchTextEditText.getText().toString());

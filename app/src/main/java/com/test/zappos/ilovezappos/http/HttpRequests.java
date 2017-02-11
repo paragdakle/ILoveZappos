@@ -15,7 +15,11 @@ import retrofit2.http.GET;
 import retrofit2.http.Query;
 
 /**
- * Created by root on 7/3/16.
+ * Created by Parag Dakle on 7/3/16.
+ *
+ * Generic template class for performing all HTTP requests.
+ *
+ * @param T Response Class
  */
 public class HttpRequests<T> {
 
@@ -27,7 +31,6 @@ public class HttpRequests<T> {
     /*
      * HTTP Status Codes
      */
-
     private int REQUEST_EXECUTED_SUCCESSFULLY = 200;
 
     private boolean isRetryRequired = true;
@@ -37,6 +40,13 @@ public class HttpRequests<T> {
         Call<ProductSearchResponse> search(@Query("term") String term, @Query("key") String key);
     }
 
+    /* Function executes an HTTP request by calling the appropriate method.
+     *
+     * @param method HTTP API identifier
+     * @param parameters Map of all the parameters needed to consume the HTTP API.
+     *
+     * @return T Response class object is successful else null.
+     */
     public T execute(int method, Map<String, String> parameters) {
         switch (method) {
             case SEARCH_PRODUCT:
@@ -46,11 +56,17 @@ public class HttpRequests<T> {
         return null;
     }
 
+    /* Function executes an HTTPS request to execute an product search using the given parameters.
+     *
+     * @param parameters Map of all the search parameters.
+     *
+     * @return response ProductSearchResponse object containing all the search results.
+     */
     private ProductSearchResponse search(Map<String, String> parameters) {
 
         ProductSearchResponse response = null;
 
-        String searchTerm = "";
+        String searchTerm;
 
         if(parameters != null && parameters.size() > 0 && parameters.containsKey(Constants.SEARCH_KEY_TERM)) {
 
@@ -69,6 +85,7 @@ public class HttpRequests<T> {
                 try {
                     response = call.execute().body();
                     if (Integer.parseInt(response.statusCode) != REQUEST_EXECUTED_SUCCESSFULLY && this.isRetryRequired) {
+                        //If request execution failed, retry once.
                         this.isRetryRequired = false;
                         response = call.clone().execute().body();
                     }

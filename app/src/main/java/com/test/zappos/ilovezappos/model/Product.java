@@ -1,6 +1,7 @@
 package com.test.zappos.ilovezappos.model;
 
 import android.databinding.BindingAdapter;
+import android.util.Log;
 import android.widget.ImageView;
 
 import com.google.gson.JsonObject;
@@ -8,11 +9,16 @@ import com.squareup.picasso.Picasso;
 import com.test.zappos.ilovezappos.R;
 
 /**
- * Created by root on 9/2/17.
+ * Created by Parag Dakle on 9/2/17.
+ *
+ * The model class for product entity.
  */
 
 public class Product {
 
+    /*
+     * Default constructor to initialize all the product attributes.
+     */
     public Product() {
         brandName = "";
         thumbnailImageUrl = "";
@@ -86,6 +92,9 @@ public class Product {
         return productName;
     }
 
+    /*
+     * Method populates the Product object from a JsonObject.
+     */
     public void populateProductFromJson(JsonObject productJson) {
         if(productJson != null && !productJson.isJsonNull()) {
             brandName = productJson.get("brandName").getAsString();
@@ -101,13 +110,22 @@ public class Product {
         }
     }
 
+    /*
+     * BindingAdapter for loadind the image in the ImageView.
+     */
     @BindingAdapter({"bind:imageUrl"})
     public static void loadImage(ImageView view, String imageUrl) {
-        Picasso.with(view.getContext())
-                .load(imageUrl)
-                .placeholder(R.drawable.loading)
-                .error(R.drawable.no_product)
-                .resize(200, 200)
-                .into(view);
+        try {
+            Picasso.with(view.getContext())
+                    .load(imageUrl)
+                    .placeholder(R.drawable.loading)
+                    .error(R.drawable.no_product)
+                    .resize(200, 200)
+                    .into(view);
+        }
+        catch (Exception e){
+            Log.e(Product.class.getCanonicalName(), e.getStackTrace().toString());
+            view.setImageResource(R.drawable.no_product);
+        }
     }
 }

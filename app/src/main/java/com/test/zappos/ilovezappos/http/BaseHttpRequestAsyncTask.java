@@ -10,7 +10,11 @@ import java.util.Map;
 
 
 /**
- * Created by root on 7/3/16.
+ * Created by Parag Dakle on 7/3/16.
+ *
+ * Generic template class for all HTTP request AsyncTasks.
+ *
+ * @param T Response Class
  */
 public class BaseHttpRequestAsyncTask<T> extends AsyncTask<Void, T, T> {
 
